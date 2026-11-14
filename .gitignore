@@ -1,0 +1,17 @@
+# Build results
+[Bb]in/
+[Oo]bj/
+publish/
+dist/
+build-check/
+
+# Visual Studio / VS Code
+.vscode/
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Logs & temporary files
+*.log
