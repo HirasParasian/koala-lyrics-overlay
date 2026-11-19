@@ -63,6 +63,8 @@ public partial class MainWindow : Window
 
         if (fontSize.HasValue)
             FontSizeSlider.Value = fontSize.Value;
+
+        _lyrics.GeniusToken = settings.GeniusToken;
     }
 
     private void SaveSettings()

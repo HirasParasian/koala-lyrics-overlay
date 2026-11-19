@@ -5,8 +5,11 @@ public sealed class LyricsService
     private readonly LocalLyricsProvider _local = new();
     private readonly LrcLibProvider _lrcLib = new();
     private readonly KugouProvider _kugou = new();
+    private readonly PlainLyricsProvider _plain = new();
     private readonly Dictionary<string, LyricsResult?> _cache =
         new(StringComparer.OrdinalIgnoreCase);
+
+    public string? GeniusToken { get; set; }
 
     public async Task<LyricsResult?> GetAsync(
         string title,
@@ -42,7 +45,7 @@ public sealed class LyricsService
             return lrcLibResult;
         }
 
-        // 3. Try Kugou Music as fallback (extensive Asian & international synced LRC catalog)
+        // 3. Try Kugou Music as synced fallback (extensive Asian & international synced LRC catalog)
         var cleanTitle = TitleSanitizer.Clean(title);
         var kugouResult = await _kugou.SearchAsync(
             cleanTitle,
@@ -56,7 +59,6 @@ public sealed class LyricsService
             return kugouResult;
         }
 
-        // 4. If Kugou with cleaned title failed, try with original title
         if (!string.Equals(cleanTitle, title, StringComparison.OrdinalIgnoreCase))
         {
             kugouResult = await _kugou.SearchAsync(
@@ -70,6 +72,20 @@ public sealed class LyricsService
                 _cache[key] = kugouResult;
                 return kugouResult;
             }
+        }
+
+        // 4. Final fallback: Genius & open web plain lyrics (unsynced with auto-timing)
+        var plainResult = await _plain.SearchAsync(
+            title,
+            artist,
+            durationSeconds,
+            GeniusToken,
+            cancellationToken);
+
+        if (plainResult is not null)
+        {
+            _cache[key] = plainResult;
+            return plainResult;
         }
 
         _cache[key] = null;
