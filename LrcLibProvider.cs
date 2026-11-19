@@ -15,6 +15,7 @@ public sealed class LrcLibProvider
     {
         _http.DefaultRequestHeaders.UserAgent.ParseAdd(
             "SpotifyLyricsOverlay/4.0 (personal desktop app)");
+        _http.Timeout = TimeSpan.FromSeconds(5);
     }
 
     public async Task<LyricsResult?> SearchAsync(
@@ -24,24 +25,44 @@ public sealed class LrcLibProvider
         double durationSeconds,
         CancellationToken cancellationToken = default)
     {
+        var cleanTitle = TitleSanitizer.Clean(title);
+
+        // 1. Exact match with original title
         var exact = await GetExactAsync(
             title, artist, album, durationSeconds, cancellationToken);
-
-        var exactResult = ToResult(exact, "LRCLIB exact");
+        var exactResult = ToResult(exact, "LRCLIB exact", durationSeconds);
         if (exactResult is not null)
             return exactResult;
 
+        // 2. Exact match with cleaned title
+        if (!string.Equals(cleanTitle, title, StringComparison.OrdinalIgnoreCase))
+        {
+            var cleanExact = await GetExactAsync(
+                cleanTitle, artist, album, durationSeconds, cancellationToken);
+            var cleanExactResult = ToResult(cleanExact, "LRCLIB exact (clean)", durationSeconds);
+            if (cleanExactResult is not null)
+                return cleanExactResult;
+        }
+
+        // 3. Search endpoint by track_name & artist_name
         var candidates = await SearchAsync(
-            title, artist, cancellationToken);
+            cleanTitle, artist, cancellationToken);
+
+        // 4. Broad search endpoint (?q=...) if candidates empty
+        if (candidates.Count == 0)
+        {
+            candidates = await SearchQueryAsync(
+                $"{cleanTitle} {artist}", cancellationToken);
+        }
 
         var best = SelectBest(
             candidates,
-            title,
+            cleanTitle,
             artist,
             album,
             durationSeconds);
 
-        return ToResult(best, "LRCLIB search");
+        return ToResult(best, "LRCLIB search", durationSeconds);
     }
 
     private async Task<LrcRecord?> GetExactAsync(
@@ -51,21 +72,28 @@ public sealed class LrcLibProvider
         double durationSeconds,
         CancellationToken cancellationToken)
     {
-        var url =
-            $"{BaseUrl}/get" +
-            $"?track_name={Uri.EscapeDataString(title)}" +
-            $"&artist_name={Uri.EscapeDataString(artist)}" +
-            $"&album_name={Uri.EscapeDataString(album)}" +
-            $"&duration={durationSeconds.ToString(CultureInfo.InvariantCulture)}";
+        try
+        {
+            var url =
+                $"{BaseUrl}/get" +
+                $"?track_name={Uri.EscapeDataString(title)}" +
+                $"&artist_name={Uri.EscapeDataString(artist)}" +
+                $"&album_name={Uri.EscapeDataString(album)}" +
+                $"&duration={durationSeconds.ToString(CultureInfo.InvariantCulture)}";
 
-        using var response = await _http.GetAsync(url, cancellationToken);
+            using var response = await _http.GetAsync(url, cancellationToken);
 
-        if (!response.IsSuccessStatusCode)
+            if (!response.IsSuccessStatusCode)
+                return null;
+
+            return await DeserializeAsync<LrcRecord>(
+                response,
+                cancellationToken);
+        }
+        catch
+        {
             return null;
-
-        return await DeserializeAsync<LrcRecord>(
-            response,
-            cancellationToken);
+        }
     }
 
     private async Task<List<LrcRecord>> SearchAsync(
@@ -73,19 +101,49 @@ public sealed class LrcLibProvider
         string artist,
         CancellationToken cancellationToken)
     {
-        var url =
-            $"{BaseUrl}/search" +
-            $"?track_name={Uri.EscapeDataString(title)}" +
-            $"&artist_name={Uri.EscapeDataString(artist)}";
+        try
+        {
+            var url =
+                $"{BaseUrl}/search" +
+                $"?track_name={Uri.EscapeDataString(title)}" +
+                $"&artist_name={Uri.EscapeDataString(artist)}";
 
-        using var response = await _http.GetAsync(url, cancellationToken);
+            using var response = await _http.GetAsync(url, cancellationToken);
 
-        if (!response.IsSuccessStatusCode)
+            if (!response.IsSuccessStatusCode)
+                return new();
+
+            return await DeserializeAsync<List<LrcRecord>>(
+                response,
+                cancellationToken) ?? new();
+        }
+        catch
+        {
             return new();
+        }
+    }
 
-        return await DeserializeAsync<List<LrcRecord>>(
-            response,
-            cancellationToken) ?? new();
+    private async Task<List<LrcRecord>> SearchQueryAsync(
+        string query,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var url = $"{BaseUrl}/search?q={Uri.EscapeDataString(query)}";
+
+            using var response = await _http.GetAsync(url, cancellationToken);
+
+            if (!response.IsSuccessStatusCode)
+                return new();
+
+            return await DeserializeAsync<List<LrcRecord>>(
+                response,
+                cancellationToken) ?? new();
+        }
+        catch
+        {
+            return new();
+        }
     }
 
     private static async Task<T?> DeserializeAsync<T>(
@@ -104,21 +162,40 @@ public sealed class LrcLibProvider
 
     private static LyricsResult? ToResult(
         LrcRecord? record,
-        string provider)
+        string provider,
+        double durationSeconds)
     {
-        if (record is null ||
-            string.IsNullOrWhiteSpace(record.SyncedLyrics))
+        if (record is null)
             return null;
 
-        var lines = ParseLrc(record.SyncedLyrics);
+        if (!string.IsNullOrWhiteSpace(record.SyncedLyrics))
+        {
+            var lines = LrcParser.Parse(record.SyncedLyrics);
+            if (lines.Count > 0)
+            {
+                return new LyricsResult(
+                    lines,
+                    provider,
+                    record.TrackName,
+                    record.ArtistName);
+            }
+        }
 
-        return lines.Count == 0
-            ? null
-            : new LyricsResult(
-                lines,
-                provider,
-                record.TrackName,
-                record.ArtistName);
+        // Fallback to plain lyrics with auto-timing
+        if (!string.IsNullOrWhiteSpace(record.PlainLyrics))
+        {
+            var plainLines = LrcParser.AutoTimePlainLyrics(record.PlainLyrics, durationSeconds);
+            if (plainLines.Count > 0)
+            {
+                return new LyricsResult(
+                    plainLines,
+                    $"{provider} (auto-timed)",
+                    record.TrackName,
+                    record.ArtistName);
+            }
+        }
+
+        return null;
     }
 
     private static LrcRecord? SelectBest(
@@ -128,12 +205,18 @@ public sealed class LrcLibProvider
         string album,
         double durationSeconds)
     {
-        LrcRecord? best = null;
-        var bestScore = 0.0;
+        LrcRecord? bestSynced = null;
+        var bestSyncedScore = 0.0;
+
+        LrcRecord? bestPlain = null;
+        var bestPlainScore = 0.0;
 
         foreach (var candidate in candidates)
         {
-            if (string.IsNullOrWhiteSpace(candidate.SyncedLyrics))
+            var hasSynced = !string.IsNullOrWhiteSpace(candidate.SyncedLyrics);
+            var hasPlain = !string.IsNullOrWhiteSpace(candidate.PlainLyrics);
+
+            if (!hasSynced && !hasPlain)
                 continue;
 
             var titleScore = Similarity(
@@ -163,67 +246,25 @@ public sealed class LrcLibProvider
                 albumScore * 0.05 +
                 durationScore * 0.10;
 
-            if (score > bestScore)
+            if (hasSynced && score > bestSyncedScore)
             {
-                bestScore = score;
-                best = candidate;
+                bestSyncedScore = score;
+                bestSynced = candidate;
+            }
+            else if (!hasSynced && score > bestPlainScore)
+            {
+                bestPlainScore = score;
+                bestPlain = candidate;
             }
         }
 
-        return bestScore >= 0.65 ? best : null;
-    }
+        if (bestSyncedScore >= 0.55)
+            return bestSynced;
 
-    private static List<LyricsLine> ParseLrc(string lrc)
-    {
-        var result = new List<LyricsLine>();
+        if (bestPlainScore >= 0.65)
+            return bestPlain;
 
-        var regex = new Regex(
-            @"\[(\d{1,3}):(\d{2})(?:[.:](\d{1,3}))?\]",
-            RegexOptions.Compiled);
-
-        foreach (var raw in lrc.Split('\n'))
-        {
-            var line = raw.TrimEnd('\r');
-            var matches = regex.Matches(line);
-
-            if (matches.Count == 0)
-                continue;
-
-            var text = regex.Replace(line, "").Trim();
-
-            if (string.IsNullOrWhiteSpace(text))
-                continue;
-
-            foreach (Match match in matches)
-            {
-                if (!int.TryParse(match.Groups[1].Value, out var minutes) ||
-                    !int.TryParse(match.Groups[2].Value, out var seconds))
-                    continue;
-
-                var fraction = match.Groups[3].Value;
-                var milliseconds = 0;
-
-                if (!string.IsNullOrWhiteSpace(fraction))
-                {
-                    milliseconds = fraction.Length switch
-                    {
-                        1 => int.Parse(fraction) * 100,
-                        2 => int.Parse(fraction) * 10,
-                        _ => int.Parse(fraction[..3])
-                    };
-                }
-
-                result.Add(new LyricsLine(
-                    minutes * 60_000L +
-                    seconds * 1_000L +
-                    milliseconds,
-                    text));
-            }
-        }
-
-        return result
-            .OrderBy(x => x.TimeMs)
-            .ToList();
+        return null;
     }
 
     private static string Normalize(string value)
@@ -287,5 +328,6 @@ public sealed class LrcLibProvider
         public string AlbumName { get; set; } = "";
         public double Duration { get; set; }
         public string? SyncedLyrics { get; set; }
+        public string? PlainLyrics { get; set; }
     }
 }
