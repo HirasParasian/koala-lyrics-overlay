@@ -191,7 +191,9 @@ public sealed class LrcLibProvider
                     plainLines,
                     $"{provider} (auto-timed)",
                     record.TrackName,
-                    record.ArtistName);
+                    record.ArtistName,
+                    IsSynced: false,
+                    PlainText: record.PlainLyrics);
             }
         }
 

@@ -16,6 +16,7 @@ public partial class MainWindow : Window
     private bool _polling;
     private bool _isPositionLocked;
     private int _manualOffsetMs;
+    private bool _showingPlainLyrics;
 
     public MainWindow()
     {
@@ -160,9 +161,20 @@ public partial class MainWindow : Window
                             $"Media: {playback.SourceApp} - " +
                             $"Lyrics: {_currentLyrics.Provider} - " +
                             $"{_currentLyrics.Lines.Count} lines");
+
+                        // Switch display mode based on synced vs unsynced
+                        if (_currentLyrics.IsSynced)
+                        {
+                            ShowSyncedMode();
+                        }
+                        else
+                        {
+                            ShowPlainMode(_currentLyrics.PlainText, _currentLyrics.Lines);
+                        }
                     }
                     else
                     {
+                        ShowSyncedMode();
                         SetStatus(
                             $"Media: {playback.SourceApp} - Lyrics not found - " +
                             $"{playback.Title}");
@@ -190,8 +202,18 @@ public partial class MainWindow : Window
     {
         if (_currentLyrics?.Lines.Count is not > 0)
         {
-            SetCurrentLyric("Lyrics not found");
-            SetNextLyric("");
+            if (!_showingPlainLyrics)
+            {
+                SetCurrentLyric("Lyrics not found");
+                SetNextLyric("");
+            }
+            return;
+        }
+
+        // For plain/unsynced lyrics, auto-scroll the ScrollViewer based on progress
+        if (_showingPlainLyrics && _currentLyrics is not null)
+        {
+            AutoScrollPlainLyrics(progressMs, _currentLyrics);
             return;
         }
 
@@ -212,6 +234,55 @@ public partial class MainWindow : Window
                 : "");
     }
 
+    private void ShowSyncedMode()
+    {
+        _showingPlainLyrics = false;
+        SyncedLyricsPanel.Visibility = Visibility.Visible;
+        PlainLyricsScroller.Visibility = Visibility.Collapsed;
+    }
+
+    private void ShowPlainMode(string? plainText, IReadOnlyList<LyricsLine> lines)
+    {
+        _showingPlainLyrics = true;
+        SyncedLyricsPanel.Visibility = Visibility.Collapsed;
+        PlainLyricsScroller.Visibility = Visibility.Visible;
+
+        // Build display text from PlainText or fall back to Lines
+        var displayText = !string.IsNullOrWhiteSpace(plainText)
+            ? plainText.Trim()
+            : string.Join("\n", lines.Select(l => l.Text));
+
+        PlainLyricsText.Text = displayText;
+        PlainLyricsStroke.Text = displayText;
+
+        // Apply font sizes
+        var fontSize = Math.Max(12, FontSizeSlider.Value * 0.55);
+        PlainLyricsText.FontSize = fontSize;
+        PlainLyricsStroke.FontSize = fontSize;
+        PlainLyricsText.LineHeight = fontSize * 1.6;
+        PlainLyricsStroke.LineHeight = fontSize * 1.6;
+    }
+
+    private void AutoScrollPlainLyrics(long progressMs, LyricsResult lyrics)
+    {
+        if (PlainLyricsScroller.ScrollableHeight <= 0)
+            return;
+
+        var firstTime = lyrics.Lines[0].TimeMs;
+        var lastTime = lyrics.Lines[^1].TimeMs;
+        var totalRange = lastTime - firstTime;
+
+        if (totalRange <= 0)
+            return;
+
+        var progress = Math.Clamp(
+            (double)(progressMs - firstTime) / totalRange,
+            0.0, 1.0);
+
+        PlainLyricsScroller.ScrollToVerticalOffset(
+            progress * PlainLyricsScroller.ScrollableHeight);
+    }
+
     private void FontSizeSlider_ValueChanged(
         object sender,
         RoutedPropertyChangedEventArgs<double> e)
@@ -221,6 +292,16 @@ public partial class MainWindow : Window
 
         SetCurrentLyricFontSize(e.NewValue);
         SetNextLyricFontSize(Math.Max(12, e.NewValue * 0.48));
+
+        // Update plain lyrics font if visible
+        if (_showingPlainLyrics)
+        {
+            var plainSize = Math.Max(12, e.NewValue * 0.55);
+            PlainLyricsText.FontSize = plainSize;
+            PlainLyricsStroke.FontSize = plainSize;
+            PlainLyricsText.LineHeight = plainSize * 1.6;
+            PlainLyricsStroke.LineHeight = plainSize * 1.6;
+        }
     }
 
     private void SetCurrentLyric(string text)

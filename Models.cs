@@ -16,4 +16,6 @@ public sealed record LyricsResult(
     IReadOnlyList<LyricsLine> Lines,
     string Provider,
     string TrackName,
-    string ArtistName);
+    string ArtistName,
+    bool IsSynced = true,
+    string? PlainText = null);

@@ -93,7 +93,8 @@
             </StackPanel>
 
             <!-- Row 1: Lyrics Display -->
-            <StackPanel Grid.Row="1"
+            <StackPanel x:Name="SyncedLyricsPanel"
+                        Grid.Row="1"
                         VerticalAlignment="Center"
                         Margin="0,2,0,2">
 
@@ -205,6 +206,38 @@
                                HorizontalAlignment="Center"/>
                 </Grid>
             </StackPanel>
+
+            <!-- Row 1: Plain Lyrics Display (full text, scrollable) -->
+            <ScrollViewer x:Name="PlainLyricsScroller"
+                          Grid.Row="1"
+                          Visibility="Collapsed"
+                          VerticalScrollBarVisibility="Auto"
+                          HorizontalScrollBarVisibility="Disabled"
+                          Margin="0,2,0,2"
+                          Padding="4,0">
+                <Grid>
+                    <TextBlock x:Name="PlainLyricsStroke"
+                               Foreground="#D9000000"
+                               FontSize="20"
+                               FontWeight="SemiBold"
+                               TextWrapping="Wrap"
+                               TextAlignment="Center"
+                               LineHeight="30"
+                               HorizontalAlignment="Center">
+                        <TextBlock.Effect>
+                            <BlurEffect Radius="2" KernelType="Gaussian"/>
+                        </TextBlock.Effect>
+                    </TextBlock>
+                    <TextBlock x:Name="PlainLyricsText"
+                               Foreground="#1ED760"
+                               FontSize="20"
+                               FontWeight="SemiBold"
+                               TextWrapping="Wrap"
+                               TextAlignment="Center"
+                               LineHeight="30"
+                               HorizontalAlignment="Center"/>
+                </Grid>
+            </ScrollViewer>
 
             <!-- Row 2: Bottom Bar (Song Title & Resize Grip) -->
             <Grid Grid.Row="2"

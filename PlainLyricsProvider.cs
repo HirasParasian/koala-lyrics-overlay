@@ -15,7 +15,7 @@ public sealed class PlainLyricsProvider
     {
         _http.DefaultRequestHeaders.UserAgent.ParseAdd(
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36");
-        _http.Timeout = TimeSpan.FromSeconds(6);
+        _http.Timeout = TimeSpan.FromSeconds(10);
     }
 
     public async Task<LyricsResult?> SearchAsync(
@@ -99,7 +99,9 @@ public sealed class PlainLyricsProvider
                 lines,
                 "Genius / Plain (unsynced)",
                 title,
-                artist);
+                artist,
+                IsSynced: false,
+                PlainText: plainText);
         }
         catch
         {
@@ -161,7 +163,9 @@ public sealed class PlainLyricsProvider
                 lines,
                 "Genius (unsynced)",
                 title,
-                artist);
+                artist,
+                IsSynced: false,
+                PlainText: extracted);
         }
         catch
         {
