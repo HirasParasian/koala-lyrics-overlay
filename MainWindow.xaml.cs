@@ -219,7 +219,7 @@ public partial class MainWindow : Window
 
         var index = 0;
 
-        for (var i = 0; i < _currentLyrics.Lines.Count; i++)
+        for (var i = 0; i < _currentLyrics!.Lines.Count; i++)
         {
             if (_currentLyrics.Lines[i].TimeMs <= progressMs)
                 index = i;

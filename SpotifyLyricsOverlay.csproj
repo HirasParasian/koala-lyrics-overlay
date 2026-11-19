@@ -11,4 +11,9 @@
   <ItemGroup>
     <Resource Include="icon\AppIcon.ico" />
   </ItemGroup>
+  <ItemGroup>
+    <None Update="Lyrics\**">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
 </Project>
