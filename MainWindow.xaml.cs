@@ -1,3 +1,4 @@
+using System.IO;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Threading;
@@ -343,6 +344,25 @@ public partial class MainWindow : Window
     private void SetStatus(string message)
     {
         StatusText.Text = message;
+    }
+
+    private void OpenLyricsFolderButton_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            var folder = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                "SpotifyLyricsOverlay",
+                "Lyrics");
+
+            Directory.CreateDirectory(folder);
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = folder,
+                UseShellExecute = true
+            });
+        }
+        catch { }
     }
 
     private void PositionLockButton_Click(object sender, RoutedEventArgs e)

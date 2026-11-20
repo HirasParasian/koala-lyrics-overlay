@@ -46,53 +46,113 @@ public sealed class LocalLyricsProvider
             candidates.Add($"{cleanTitle}.txt");
         }
 
-        var searchDirs = new[] { _userLyricsDir, _appLyricsDir };
-
-        foreach (var dir in searchDirs)
+        var searchDirs = new List<string>
         {
-            if (!Directory.Exists(dir))
-                continue;
+            _userLyricsDir,
+            _appLyricsDir,
+            Path.Combine(Directory.GetCurrentDirectory(), "Lyrics"),
+            @"D:\PROJECT SPOTIFY\LyricLocal\Lyrics"
+        };
 
+        try
+        {
+            var baseDir = AppDomain.CurrentDomain.BaseDirectory;
+            var parent1 = Directory.GetParent(baseDir)?.FullName;
+            var parent2 = parent1 != null ? Directory.GetParent(parent1)?.FullName : null;
+            var parent3 = parent2 != null ? Directory.GetParent(parent2)?.FullName : null;
+
+            if (parent1 != null) searchDirs.Add(Path.Combine(parent1, "Lyrics"));
+            if (parent2 != null) searchDirs.Add(Path.Combine(parent2, "Lyrics"));
+            if (parent3 != null) searchDirs.Add(Path.Combine(parent3, "Lyrics"));
+        }
+        catch { }
+
+        // Remove duplicate directories
+        var uniqueDirs = searchDirs
+            .Where(d => !string.IsNullOrWhiteSpace(d) && Directory.Exists(d))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        // 1. Exact match pass
+        foreach (var dir in uniqueDirs)
+        {
             foreach (var name in candidates)
             {
                 var filePath = Path.Combine(dir, name);
                 if (File.Exists(filePath))
                 {
-                    try
-                    {
-                        var text = File.ReadAllText(filePath);
-                        if (string.IsNullOrWhiteSpace(text))
-                            continue;
-
-                        // Check if it's LRC format with timestamps
-                        var lines = LrcParser.Parse(text);
-                        if (lines.Count > 0)
-                        {
-                            return Task.FromResult<LyricsResult?>(
-                                new LyricsResult(
-                                    lines,
-                                    "Local LRC File",
-                                    title,
-                                    artist,
-                                    IsSynced: true));
-                        }
-
-                        // Otherwise treated as plain text lyrics
-                        var autoTimedLines = LrcParser.AutoTimePlainLyrics(text, durationSeconds);
-                        return Task.FromResult<LyricsResult?>(
-                            new LyricsResult(
-                                autoTimedLines,
-                                "Local Text File",
-                                title,
-                                artist,
-                                IsSynced: false,
-                                PlainText: text));
-                    }
-                    catch { }
+                    var res = TryReadFile(filePath, title, artist, durationSeconds);
+                    if (res is not null) return Task.FromResult<LyricsResult?>(res);
                 }
             }
         }
 
+        // 2. Fuzzy / contains filename match pass
+        foreach (var dir in uniqueDirs)
+        {
+            try
+            {
+                var files = Directory.GetFiles(dir, "*.*")
+                    .Where(f => f.EndsWith(".lrc", StringComparison.OrdinalIgnoreCase) ||
+                                f.EndsWith(".txt", StringComparison.OrdinalIgnoreCase));
+
+                foreach (var file in files)
+                {
+                    var fileNameWithoutExt = Path.GetFileNameWithoutExtension(file);
+
+                    // Check if file name contains title or cleanTitle
+                    if (fileNameWithoutExt.Contains(title, StringComparison.OrdinalIgnoreCase) ||
+                        fileNameWithoutExt.Contains(cleanTitle, StringComparison.OrdinalIgnoreCase) ||
+                        title.Contains(fileNameWithoutExt, StringComparison.OrdinalIgnoreCase))
+                    {
+                        var res = TryReadFile(file, title, artist, durationSeconds);
+                        if (res is not null) return Task.FromResult<LyricsResult?>(res);
+                    }
+                }
+            }
+            catch { }
+        }
+
         return Task.FromResult<LyricsResult?>(null);
+    }
+
+    private static LyricsResult? TryReadFile(
+        string filePath,
+        string title,
+        string artist,
+        double durationSeconds)
+    {
+        try
+        {
+            var text = File.ReadAllText(filePath);
+            if (string.IsNullOrWhiteSpace(text))
+                return null;
+
+            // Check if it's LRC format with timestamps
+            var lines = LrcParser.Parse(text);
+            if (lines.Count > 0)
+            {
+                return new LyricsResult(
+                    lines,
+                    $"Local File ({Path.GetFileName(filePath)})",
+                    title,
+                    artist,
+                    IsSynced: true);
+            }
+
+            // Otherwise treated as plain text lyrics
+            var autoTimedLines = LrcParser.AutoTimePlainLyrics(text, durationSeconds);
+            return new LyricsResult(
+                autoTimedLines,
+                $"Local File ({Path.GetFileName(filePath)})",
+                title,
+                artist,
+                IsSynced: false,
+                PlainText: text);
+        }
+        catch
+        {
+            return null;
+        }
     }
 }

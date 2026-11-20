@@ -80,6 +80,16 @@
                         IsSnapToTickEnabled="True"
                         VerticalAlignment="Center"
                         ValueChanged="FontSizeSlider_ValueChanged"/>
+                <Button x:Name="OpenLyricsFolderButton"
+                        Content="&#xED25;"
+                        FontFamily="Segoe MDL2 Assets"
+                        FontSize="13"
+                        Width="28"
+                        Height="24"
+                        Padding="0"
+                        Margin="8,0,0,0"
+                        ToolTip="Buka Folder Lirik (Offline / Custom Lyrics)"
+                        Click="OpenLyricsFolderButton_Click"/>
                 <Button x:Name="PositionLockButton"
                         Content="&#xE72E;"
                         FontFamily="Segoe MDL2 Assets"
@@ -87,7 +97,7 @@
                         Width="28"
                         Height="24"
                         Padding="0"
-                        Margin="8,0,0,0"
+                        Margin="6,0,0,0"
                         ToolTip="Lock position"
                         Click="PositionLockButton_Click"/>
             </StackPanel>

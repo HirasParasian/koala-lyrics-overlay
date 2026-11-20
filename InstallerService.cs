@@ -60,6 +60,30 @@ public static class InstallerService
             if (!string.Equals(sourceExe, installExe, StringComparison.OrdinalIgnoreCase))
             {
                 File.Copy(sourceExe, installExe, overwrite: true);
+
+                // Copy Lyrics folder if adjacent to setup exe
+                var sourceDir = Path.GetDirectoryName(sourceExe);
+                if (!string.IsNullOrWhiteSpace(sourceDir))
+                {
+                    var sourceLyrics = Path.Combine(sourceDir, "Lyrics");
+                    var targetLyrics = Path.Combine(installDir, "Lyrics");
+                    var appDataLyrics = Path.Combine(
+                        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                        "SpotifyLyricsOverlay", "Lyrics");
+
+                    if (Directory.Exists(sourceLyrics))
+                    {
+                        Directory.CreateDirectory(targetLyrics);
+                        Directory.CreateDirectory(appDataLyrics);
+
+                        foreach (var file in Directory.GetFiles(sourceLyrics))
+                        {
+                            var fileName = Path.GetFileName(file);
+                            try { File.Copy(file, Path.Combine(targetLyrics, fileName), true); } catch { }
+                            try { File.Copy(file, Path.Combine(appDataLyrics, fileName), true); } catch { }
+                        }
+                    }
+                }
             }
 
             CreateShortcuts(installDir, installExe);
