@@ -10,7 +10,7 @@ public static class InstallerService
     private const string AppName = "Spotify Lyrics Overlay";
     private const string AppId = "SpotifyLyricsOverlay";
     public static readonly string AppVersion =
-        System.Reflection.Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "1.0.2";
+        System.Reflection.Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "1.0.3";
 
     public static bool HandleInstallArguments(string[] args)
     {
