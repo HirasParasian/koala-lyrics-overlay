@@ -19,6 +19,36 @@ public sealed class LocalLyricsProvider
         try
         {
             Directory.CreateDirectory(_userLyricsDir);
+            ExtractBundledLyrics();
+        }
+        catch { }
+    }
+
+    private void ExtractBundledLyrics()
+    {
+        try
+        {
+            var assembly = System.Reflection.Assembly.GetExecutingAssembly();
+            var resourceNames = assembly.GetManifestResourceNames();
+
+            foreach (var resName in resourceNames)
+            {
+                if (!resName.StartsWith("SpotifyLyricsOverlay.Lyrics.", StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                var fileName = resName.Substring("SpotifyLyricsOverlay.Lyrics.".Length);
+                var targetPath = Path.Combine(_userLyricsDir, fileName);
+
+                if (!File.Exists(targetPath))
+                {
+                    using var stream = assembly.GetManifestResourceStream(resName);
+                    if (stream != null)
+                    {
+                        using var fileStream = File.Create(targetPath);
+                        stream.CopyTo(fileStream);
+                    }
+                }
+            }
         }
         catch { }
     }

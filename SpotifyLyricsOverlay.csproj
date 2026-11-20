@@ -12,6 +12,9 @@
     <Resource Include="icon\AppIcon.ico" />
   </ItemGroup>
   <ItemGroup>
+    <EmbeddedResource Include="Lyrics\**" />
+  </ItemGroup>
+  <ItemGroup>
     <None Update="Lyrics\**">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
