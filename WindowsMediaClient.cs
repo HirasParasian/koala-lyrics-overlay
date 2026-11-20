@@ -14,51 +14,64 @@ public sealed class WindowsMediaClient
 
     public async Task<MediaPlayback?> GetCurrentPlaybackAsync()
     {
-        if (_manager is null)
-            await InitializeAsync();
-
-        var session = GetPreferredSession();
-        if (session is null)
-            return null;
-
-        var properties = await session.TryGetMediaPropertiesAsync();
-        var timeline = session.GetTimelineProperties();
-        var playbackInfo = session.GetPlaybackInfo();
-
-        var title = properties.Title?.Trim() ?? "";
-        var artist = properties.Artist?.Trim() ?? "";
-
-        if (string.IsNullOrWhiteSpace(title))
-            return null;
-
-        var position = timeline.Position;
-
-        if (playbackInfo.PlaybackStatus ==
-            GlobalSystemMediaTransportControlsSessionPlaybackStatus.Playing)
+        try
         {
-            position += DateTimeOffset.Now - timeline.LastUpdatedTime;
+            if (_manager is null)
+                await InitializeAsync();
+
+            var session = GetPreferredSession();
+            if (session is null)
+                return null;
+
+            var properties = await session.TryGetMediaPropertiesAsync();
+            if (properties is null)
+                return null;
+
+            var title = properties.Title?.Trim() ?? "";
+            var artist = properties.Artist?.Trim() ?? "";
+
+            if (string.IsNullOrWhiteSpace(title))
+                return null;
+
+            var timeline = session.GetTimelineProperties();
+            var playbackInfo = session.GetPlaybackInfo();
+
+            var position = timeline?.Position ?? TimeSpan.Zero;
+
+            if (playbackInfo != null &&
+                playbackInfo.PlaybackStatus == GlobalSystemMediaTransportControlsSessionPlaybackStatus.Playing &&
+                timeline != null)
+            {
+                position += DateTimeOffset.Now - timeline.LastUpdatedTime;
+            }
+
+            if (timeline != null && timeline.EndTime > TimeSpan.Zero && position > timeline.EndTime)
+                position = timeline.EndTime;
+
+            if (position < TimeSpan.Zero)
+                position = TimeSpan.Zero;
+
+            var duration = (timeline != null && timeline.EndTime > TimeSpan.Zero)
+                ? timeline.EndTime
+                : TimeSpan.Zero;
+
+            var isPlaying = playbackInfo != null &&
+                playbackInfo.PlaybackStatus == GlobalSystemMediaTransportControlsSessionPlaybackStatus.Playing;
+
+            return new MediaPlayback(
+                CreateTrackId(session.SourceAppUserModelId ?? "", title, artist, duration),
+                title,
+                artist,
+                properties.AlbumTitle?.Trim() ?? "",
+                (long)position.TotalMilliseconds,
+                (long)duration.TotalMilliseconds,
+                isPlaying,
+                session.SourceAppUserModelId ?? "");
         }
-
-        if (timeline.EndTime > TimeSpan.Zero && position > timeline.EndTime)
-            position = timeline.EndTime;
-
-        if (position < TimeSpan.Zero)
-            position = TimeSpan.Zero;
-
-        var duration = timeline.EndTime > TimeSpan.Zero
-            ? timeline.EndTime
-            : TimeSpan.Zero;
-
-        return new MediaPlayback(
-            CreateTrackId(session.SourceAppUserModelId, title, artist, duration),
-            title,
-            artist,
-            properties.AlbumTitle?.Trim() ?? "",
-            (long)position.TotalMilliseconds,
-            (long)duration.TotalMilliseconds,
-            playbackInfo.PlaybackStatus ==
-                GlobalSystemMediaTransportControlsSessionPlaybackStatus.Playing,
-            session.SourceAppUserModelId);
+        catch
+        {
+            return null;
+        }
     }
 
     private GlobalSystemMediaTransportControlsSession? GetPreferredSession()

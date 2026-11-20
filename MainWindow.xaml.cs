@@ -372,7 +372,11 @@ public partial class MainWindow : Window
 
     private void DragWindow(object sender, MouseButtonEventArgs e)
     {
-        if (!_isPositionLocked && e.LeftButton == MouseButtonState.Pressed)
-            DragMove();
+        try
+        {
+            if (!_isPositionLocked && e.LeftButton == MouseButtonState.Pressed)
+                DragMove();
+        }
+        catch { }
     }
 }
