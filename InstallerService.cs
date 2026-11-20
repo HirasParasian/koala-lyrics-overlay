@@ -9,6 +9,8 @@ public static class InstallerService
 {
     private const string AppName = "Spotify Lyrics Overlay";
     private const string AppId = "SpotifyLyricsOverlay";
+    public static readonly string AppVersion =
+        System.Reflection.Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "1.0.2";
 
     public static bool HandleInstallArguments(string[] args)
     {
@@ -196,7 +198,7 @@ public static class InstallerService
             {
                 key.SetValue("DisplayName", AppName);
                 key.SetValue("DisplayIcon", installExe);
-                key.SetValue("DisplayVersion", "1.0.0");
+                key.SetValue("DisplayVersion", AppVersion);
                 key.SetValue("Publisher", "Local");
                 key.SetValue("InstallLocation", installDir);
                 key.SetValue("NoModify", 1, RegistryValueKind.DWord);

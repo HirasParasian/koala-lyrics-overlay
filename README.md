@@ -1,17 +1,22 @@
-# Spotify Lyrics Overlay
+# Spotify Lyrics Overlay `v1.0.2`
 
 Floating transparent lyrics overlay for Spotify on Windows.
 
 ## Features
 
-- WPF .NET 8 (Windows 10 / 11)
-- Native Windows Media Session (SMTC) integration — **No Spotify login or Client ID required**
-- Real-time track detection & playback synchronization
-- Synced lyrics via LRCLIB (exact match + fuzzy search fallback)
-- Floating always-on-top transparent overlay
-- Adjustable lyric font size & position lock
-- Compact UI with clean layout
-- Self-contained 1-click single-file installer
+- **WPF .NET 8** (Windows 10 / 11)
+- **Native Windows Media Session (SMTC)** integration — No Spotify login or Client ID required
+- **Real-time track detection & playback synchronization**
+- **Multi-Source Lyrics Fallback**:
+  - Local custom lyrics (`.lrc` & `.txt`)
+  - LRCLIB (synced karaoke LRC & plain text)
+  - Kugou Music (synced Asian & international catalog)
+  - Plain lyrics (full scrollable display with smooth manual scrolling)
+- **Built-in Bundled Lyrics**: Otomatis mengekstrak koleksi lirik lagu populer saat pertama kali dipasang
+- **One-Click Lyrics Folder Access**: Tombol khusus di pojok atas overlay untuk membuka folder lirik di Windows Explorer
+- **Floating Always-On-Top** transparent overlay dengan font size slider & position lock
+- **Crash Prevention Protection**: Dilengkapi global exception handler yang tahan terhadap gangguan koneksi media
+- **Self-contained 1-click single-file installer**
 
 ## Development & Run
 
