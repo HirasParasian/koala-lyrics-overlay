@@ -1,6 +1,8 @@
 using System.IO;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Media;
 using System.Windows.Threading;
 
 namespace SpotifyLyricsOverlay;
@@ -18,6 +20,8 @@ public partial class MainWindow : Window
     private bool _isPositionLocked;
     private int _manualOffsetMs;
     private bool _showingPlainLyrics;
+    private string _currentFontFamily = "Segoe UI";
+    private string _currentPrimaryColor = "#1ED760";
 
     public MainWindow()
     {
@@ -66,7 +70,36 @@ public partial class MainWindow : Window
         if (fontSize.HasValue)
             FontSizeSlider.Value = fontSize.Value;
 
+        _currentFontFamily = !string.IsNullOrWhiteSpace(settings.FontFamily)
+            ? settings.FontFamily
+            : "Segoe UI";
+
+        _currentPrimaryColor = !string.IsNullOrWhiteSpace(settings.PrimaryColor)
+            ? settings.PrimaryColor
+            : "#1ED760";
+
+        InitializeFontList();
+        ApplyFontFamily(_currentFontFamily);
+        ApplyPrimaryColor(_currentPrimaryColor);
+
         _lyrics.GeniusToken = settings.GeniusToken;
+    }
+
+    private void InitializeFontList()
+    {
+        try
+        {
+            var popular = new[] { "Segoe UI", "Arial", "Cascadia Code", "Consolas", "Georgia", "Trebuchet MS", "Comic Sans MS", "Impact" };
+            var systemFonts = Fonts.SystemFontFamilies
+                .Select(f => f.Source)
+                .Where(name => !popular.Contains(name, StringComparer.OrdinalIgnoreCase))
+                .OrderBy(x => x);
+
+            var allFonts = popular.Concat(systemFonts).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+            FontFamilyComboBox.ItemsSource = allFonts;
+            FontFamilyComboBox.SelectedItem = _currentFontFamily;
+        }
+        catch { }
     }
 
     private void SaveSettings()
@@ -77,7 +110,10 @@ public partial class MainWindow : Window
             Top = RestoreBounds.Top,
             Width = RestoreBounds.Width,
             Height = RestoreBounds.Height,
-            FontSize = FontSizeSlider.Value
+            FontSize = FontSizeSlider.Value,
+            FontFamily = _currentFontFamily,
+            PrimaryColor = _currentPrimaryColor,
+            GeniusToken = _lyrics.GeniusToken
         });
     }
 
@@ -341,6 +377,68 @@ public partial class MainWindow : Window
                 FileName = folder,
                 UseShellExecute = true
             });
+        }
+        catch { }
+    }
+
+    private void ColorPaletteButton_Click(object sender, RoutedEventArgs e)
+    {
+        ColorPalettePopup.IsOpen = !ColorPalettePopup.IsOpen;
+    }
+
+    private void ColorSwatch_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is Button btn && btn.Tag is string hex)
+        {
+            ApplyPrimaryColor(hex);
+            ColorPalettePopup.IsOpen = false;
+            SaveSettings();
+        }
+    }
+
+    private void FontFamilyComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (!IsInitialized || FontFamilyComboBox.SelectedItem is not string selected)
+            return;
+
+        ApplyFontFamily(selected);
+        SaveSettings();
+    }
+
+    private void ApplyFontFamily(string fontName)
+    {
+        try
+        {
+            _currentFontFamily = fontName;
+            var font = new FontFamily(fontName);
+
+            CurrentLyric.FontFamily = font;
+            CurrentLyricStrokeLeft.FontFamily = font;
+            CurrentLyricStrokeRight.FontFamily = font;
+            CurrentLyricStrokeTop.FontFamily = font;
+            CurrentLyricStrokeBottom.FontFamily = font;
+
+            NextLyric.FontFamily = font;
+            NextLyricStrokeLeft.FontFamily = font;
+            NextLyricStrokeRight.FontFamily = font;
+            NextLyricStrokeTop.FontFamily = font;
+            NextLyricStrokeBottom.FontFamily = font;
+
+            PlainLyricsText.FontFamily = font;
+            PlainLyricsStroke.FontFamily = font;
+        }
+        catch { }
+    }
+
+    private void ApplyPrimaryColor(string colorHex)
+    {
+        try
+        {
+            _currentPrimaryColor = colorHex;
+            var brush = (SolidColorBrush)new BrushConverter().ConvertFromString(colorHex)!;
+            CurrentLyric.Foreground = brush;
+            PlainLyricsText.Foreground = brush;
+            ColorPaletteButton.Foreground = brush;
         }
         catch { }
     }

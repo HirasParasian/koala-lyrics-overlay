@@ -59,20 +59,31 @@
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
 
-            <!-- Row 0: Top Controls (Font Size & Position Lock) -->
+            <!-- Row 0: Top Controls (Font, Color, Lyrics Folder & Position Lock) -->
             <StackPanel Grid.Row="0"
                         Orientation="Horizontal"
                         HorizontalAlignment="Right"
                         VerticalAlignment="Top"
                         Margin="0,0,0,2"
                         Style="{StaticResource HoverOnly}">
-                <TextBlock Text="Font"
+                <!-- Font Family Selector -->
+                <ComboBox x:Name="FontFamilyComboBox"
+                          Width="130"
+                          Height="24"
+                          FontSize="11"
+                          VerticalAlignment="Center"
+                          Margin="0,0,8,0"
+                          ToolTip="Pilih Jenis Font"
+                          SelectionChanged="FontFamilyComboBox_SelectionChanged"/>
+
+                <!-- Font Size Slider -->
+                <TextBlock Text="Size"
                            Foreground="#777777"
-                           FontSize="12"
-                           Margin="0,0,6,0"
+                           FontSize="11"
+                           Margin="0,0,4,0"
                            VerticalAlignment="Center"/>
                 <Slider x:Name="FontSizeSlider"
-                        Width="100"
+                        Width="80"
                         Minimum="16"
                         Maximum="72"
                         Value="36"
@@ -80,6 +91,61 @@
                         IsSnapToTickEnabled="True"
                         VerticalAlignment="Center"
                         ValueChanged="FontSizeSlider_ValueChanged"/>
+
+                <!-- Color Palette Button & Popup -->
+                <Button x:Name="ColorPaletteButton"
+                        Content="&#xE790;"
+                        FontFamily="Segoe MDL2 Assets"
+                        FontSize="13"
+                        Width="28"
+                        Height="24"
+                        Padding="0"
+                        Margin="6,0,0,0"
+                        ToolTip="Pilih Warna Lirik"
+                        Click="ColorPaletteButton_Click"/>
+
+                <Popup x:Name="ColorPalettePopup"
+                       PlacementTarget="{Binding ElementName=ColorPaletteButton}"
+                       Placement="Bottom"
+                       StaysOpen="False"
+                       AllowsTransparency="True">
+                    <Border Background="#F0181818"
+                            BorderBrush="#444444"
+                            BorderThickness="1"
+                            CornerRadius="8"
+                            Padding="8,6"
+                            Margin="0,4,0,0">
+                        <WrapPanel Width="150" HorizontalAlignment="Center">
+                            <!-- Color Swatches -->
+                            <Button Style="{x:Null}" Width="24" Height="24" Margin="3" Cursor="Hand" Background="#1ED760" BorderBrush="#88FFFFFF" BorderThickness="1" ToolTip="Spotify Green" Tag="#1ED760" Click="ColorSwatch_Click">
+                                <Button.Template><ControlTemplate TargetType="Button"><Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="12"/></ControlTemplate></Button.Template>
+                            </Button>
+                            <Button Style="{x:Null}" Width="24" Height="24" Margin="3" Cursor="Hand" Background="#FFFFFF" BorderBrush="#88FFFFFF" BorderThickness="1" ToolTip="Pure White" Tag="#FFFFFF" Click="ColorSwatch_Click">
+                                <Button.Template><ControlTemplate TargetType="Button"><Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="12"/></ControlTemplate></Button.Template>
+                            </Button>
+                            <Button Style="{x:Null}" Width="24" Height="24" Margin="3" Cursor="Hand" Background="#00F2FE" BorderBrush="#88FFFFFF" BorderThickness="1" ToolTip="Electric Cyan" Tag="#00F2FE" Click="ColorSwatch_Click">
+                                <Button.Template><ControlTemplate TargetType="Button"><Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="12"/></ControlTemplate></Button.Template>
+                            </Button>
+                            <Button Style="{x:Null}" Width="24" Height="24" Margin="3" Cursor="Hand" Background="#FFD166" BorderBrush="#88FFFFFF" BorderThickness="1" ToolTip="Golden Yellow" Tag="#FFD166" Click="ColorSwatch_Click">
+                                <Button.Template><ControlTemplate TargetType="Button"><Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="12"/></ControlTemplate></Button.Template>
+                            </Button>
+                            <Button Style="{x:Null}" Width="24" Height="24" Margin="3" Cursor="Hand" Background="#FF758C" BorderBrush="#88FFFFFF" BorderThickness="1" ToolTip="Pastel Rose" Tag="#FF758C" Click="ColorSwatch_Click">
+                                <Button.Template><ControlTemplate TargetType="Button"><Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="12"/></ControlTemplate></Button.Template>
+                            </Button>
+                            <Button Style="{x:Null}" Width="24" Height="24" Margin="3" Cursor="Hand" Background="#FF5858" BorderBrush="#88FFFFFF" BorderThickness="1" ToolTip="Coral Red" Tag="#FF5858" Click="ColorSwatch_Click">
+                                <Button.Template><ControlTemplate TargetType="Button"><Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="12"/></ControlTemplate></Button.Template>
+                            </Button>
+                            <Button Style="{x:Null}" Width="24" Height="24" Margin="3" Cursor="Hand" Background="#B388FF" BorderBrush="#88FFFFFF" BorderThickness="1" ToolTip="Lavender Purple" Tag="#B388FF" Click="ColorSwatch_Click">
+                                <Button.Template><ControlTemplate TargetType="Button"><Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="12"/></ControlTemplate></Button.Template>
+                            </Button>
+                            <Button Style="{x:Null}" Width="24" Height="24" Margin="3" Cursor="Hand" Background="#A8FF78" BorderBrush="#88FFFFFF" BorderThickness="1" ToolTip="Neon Mint" Tag="#A8FF78" Click="ColorSwatch_Click">
+                                <Button.Template><ControlTemplate TargetType="Button"><Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="12"/></ControlTemplate></Button.Template>
+                            </Button>
+                        </WrapPanel>
+                    </Border>
+                </Popup>
+
+                <!-- Open Lyrics Folder Button -->
                 <Button x:Name="OpenLyricsFolderButton"
                         Content="&#xED25;"
                         FontFamily="Segoe MDL2 Assets"
@@ -87,9 +153,11 @@
                         Width="28"
                         Height="24"
                         Padding="0"
-                        Margin="8,0,0,0"
+                        Margin="6,0,0,0"
                         ToolTip="Buka Folder Lirik (Offline / Custom Lyrics)"
                         Click="OpenLyricsFolderButton_Click"/>
+
+                <!-- Position Lock Button -->
                 <Button x:Name="PositionLockButton"
                         Content="&#xE72E;"
                         FontFamily="Segoe MDL2 Assets"
