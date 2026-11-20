@@ -223,6 +223,7 @@
                           Visibility="Collapsed"
                           VerticalScrollBarVisibility="Auto"
                           HorizontalScrollBarVisibility="Disabled"
+                          CanContentScroll="False"
                           Margin="0,2,0,2"
                           Padding="4,0">
                 <Grid>

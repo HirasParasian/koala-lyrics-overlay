@@ -211,10 +211,9 @@ public partial class MainWindow : Window
             return;
         }
 
-        // For plain/unsynced lyrics, auto-scroll the ScrollViewer based on progress
-        if (_showingPlainLyrics && _currentLyrics is not null)
+        // Plain / unsynced lyrics are scrolled manually by user, no auto-sync needed
+        if (_showingPlainLyrics)
         {
-            AutoScrollPlainLyrics(progressMs, _currentLyrics);
             return;
         }
 
@@ -247,6 +246,7 @@ public partial class MainWindow : Window
         _showingPlainLyrics = true;
         SyncedLyricsPanel.Visibility = Visibility.Collapsed;
         PlainLyricsScroller.Visibility = Visibility.Visible;
+        PlainLyricsScroller.ScrollToTop();
 
         // Build display text from PlainText or fall back to Lines
         var displayText = !string.IsNullOrWhiteSpace(plainText)
@@ -262,26 +262,6 @@ public partial class MainWindow : Window
         PlainLyricsStroke.FontSize = fontSize;
         PlainLyricsText.LineHeight = fontSize * 1.6;
         PlainLyricsStroke.LineHeight = fontSize * 1.6;
-    }
-
-    private void AutoScrollPlainLyrics(long progressMs, LyricsResult lyrics)
-    {
-        if (PlainLyricsScroller.ScrollableHeight <= 0)
-            return;
-
-        var firstTime = lyrics.Lines[0].TimeMs;
-        var lastTime = lyrics.Lines[^1].TimeMs;
-        var totalRange = lastTime - firstTime;
-
-        if (totalRange <= 0)
-            return;
-
-        var progress = Math.Clamp(
-            (double)(progressMs - firstTime) / totalRange,
-            0.0, 1.0);
-
-        PlainLyricsScroller.ScrollToVerticalOffset(
-            progress * PlainLyricsScroller.ScrollableHeight);
     }
 
     private void FontSizeSlider_ValueChanged(
