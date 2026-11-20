@@ -3,6 +3,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 
 namespace SpotifyLyricsOverlay;
@@ -26,6 +27,13 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+
+        // Set window icon explicitly for taskbar
+        try
+        {
+            Icon = new BitmapImage(new Uri("pack://application:,,,/icon/AppIcon.ico", UriKind.Absolute));
+        }
+        catch { }
 
         ApplySettings(_settings.Load());
 

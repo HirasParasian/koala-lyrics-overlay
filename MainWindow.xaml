@@ -12,7 +12,7 @@
         Background="Transparent"
         Topmost="True"
         ShowInTaskbar="True"
-        Icon="icon/AppIcon.ico"
+        Icon="pack://application:,,,/icon/AppIcon.ico"
         Title="Spotify Lyrics Overlay">
 
     <Window.Resources>

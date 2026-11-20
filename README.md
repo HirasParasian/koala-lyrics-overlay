@@ -1,4 +1,4 @@
-# Spotify Lyrics Overlay `v1.0.4`
+# Spotify Lyrics Overlay `v1.0.5`
 
 Floating transparent lyrics overlay for Spotify on Windows.
 
